@@ -2,8 +2,11 @@ const express = require('express');
 const app = express();
 const mysql = require('mysql');
 const bodyParder = require('body-parser');
+const cors = require('cors');
+app.use(cors());
 app.use(bodyParder());
 app.use(express.static('public'));
+app.options('*', cors());
 
 const con = mysql.createConnection({
     host: "localhost",
@@ -12,77 +15,93 @@ const con = mysql.createConnection({
     database: 'basdat',
 });
 
-app.post('/create', (req, res) => {
+// Add Person
+app.post('/API/p/person', (req, res) => {
   const {
     firstname,
     lastname,
     username,
     city,
     state,
-    check,
   } = req.body;
 
   con.connect(function(err) {
-    console.log("Connected!");
-    
     const sql = `INSERT INTO person VALUES ('${firstname}', '${lastname}', '${'@' + username}', '${city}', '${state}', NULL)`;
     con.query(sql, function (err, result) {
       if (err) throw err;
-      console.log("1 record inserted");
-      // console.log(result);
-      res.redirect('/');
+      const response = JSON.parse(JSON.stringify(result));
+      console.log("1 Data Tersimpan");
+      res.json(response);
     });
   });
 })
 
-app.get('/edit', (req, res)=>{
-  res.render('/edit');
-})
-
-app.get('/delete/:id', (req, res)=>{
-  let id = req.params.id;
-  console.log(id);
+// Delete Person
+app.delete('/API/d/person/:id', (req, res)=>{
+  let { id } = req.params;
+  // console.log(id);
   con.connect(function(err) {
     console.log("Connected!");
     
-    const sql = `DELETE FROM person WHERE id=${id};`;
+    const sql = `DELETE FROM person WHERE id='${id}'`;
     con.query(sql, (err, result) => {
       if(err) throw err;
       // console.log(result);
-      console.log("1 record deleted");
-      res.redirect('/');
+      const response = JSON.parse(JSON.stringify(result));
+      console.log("1 Data Terhapus");
+      res.json(response);
     });
   });
 })
 
-app.get('/', (req, res)=>{
+
+// All Person
+app.get('/API/g/person', (req, res)=>{
     con.connect(function(err) {
-    console.log("Connected!");
-    
-    const sql = "SELECT * FROM person";
-    con.query(sql, function (err, result) {
-      if (err) return console.log(err);
-      // console.log(result);
-      res.render('crud.ejs', {
-        person: result,
-      })
+      const sql = "SELECT * FROM person";
+      con.query(sql, function (err, result) {
+        if (err) return console.log(err);
+        const response = JSON.parse(JSON.stringify(result));
+        console.log("Data Person Berhasil diambil!");
+        res.json(response);
     });
   });
 });
 
-app.get('/edit/:id', (req, res)=>{
-  const id = req.params.id;
+// One Person
+app.get('/API/g/person/:id', (req, res)=>{
+  const { id } = req.params;
+  // console.log(id);
+  con.connect(function(err) {
+    const sql = `SELECT * FROM person where id = '${id}'`;
+    con.query(sql, function (err, result) {
+      if (err) return console.log(err);
+      const response = JSON.parse(JSON.stringify(result));
+      console.log(`Data ${id} Berhasil diambil!`);
+      res.json(response);
+    });
+  });
+});
 
-  const sql = `SELECT * FROM person WHERE id=${id}`;
+app.post('/API/e/person/:id', (req, res)=>{
+  const { id } = req.params;
+  const {
+    firstname,
+    lastname,
+    username,
+    city,
+    state,
+  } = req.body;
+
+  const sql = `UPDATE person SET firstname = '${firstname}', lastname = '${lastname}', username = '${'@' + username}', city = '${city}', state = '${state}' WHERE id = ${parseInt(id)}`;
   con.query(sql, function (err, result) {
     if (err) return console.log(err);
-    // console.log(result[0]);
-    res.render('edit.ejs', {
-      person: result[0],
-    })
+    console.log('1 Data Berhasil di Ubah')
+    const response = JSON.parse(JSON.stringify(result));
+    res.json(response);
   });
 })
 
-app.listen(3000, function () {
-  console.log('App listening on port 3000!')
+app.listen(5000, function () {
+  console.log('App listening on port 5000!')
 })
